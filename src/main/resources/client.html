@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Client</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script type="text/javascript">
+        var wsocket;
+        function connect() {
+            wsocket = new WebSocket("ws://localhost:8026/websockets/lobby");
+            wsocket.onmessage = onMessage;
+        }
+
+        function send(){
+            wsocket.send(document.getElementById("message").value);
+        }
+
+        function initUsers(response) {
+            $('#usersOnline').html('');
+             for(var i in response.payload) {
+                 var user = response.payload[i];
+                 var row = '<tr id="' + user.sessionId + '"><td>' + user.userName + '</td></tr>';
+                 $('#usersOnline').append($(row));
+             }
+        }
+
+        function userLoggedIn(response) {
+             for(var i in response.payload) {
+                 var user = response.payload[i];
+                 var row = '<tr id="' + user.sessionId + '"><td>' + user.userName + '</td></tr>';
+                 $('#usersOnline').append($(row));
+             }
+        }
+
+        function userLoggedOut(response) {
+            for(var i in response.payload) {
+                var user = response.payload[i];
+                $('table#usersOnline tr#' + user.sessionId).remove();
+            }
+        }
+
+
+        function onMessage(evt) {
+            var response = JSON.parse(evt.data);
+           // alert(evt.data);
+            if(response.responseType == "LOGIN_REQUEST"){
+                login();
+            } else if(response.responseType == "USER_LIST"){
+                initUsers(response);
+            } else if(response.responseType == "USER_LOGGED_IN"){
+                userLoggedIn(response);
+            } else if(response.responseType == "USER_LOGGED_OUT"){
+                userLoggedOut(response);
+            }
+
+
+            document.getElementById("rate").innerHTML=evt.data;
+        }
+
+        function login() {
+            var userName = prompt("Please enter user name");
+            if(userName != null) {
+                wsocket.send(JSON.stringify(createRequest("LOGIN", userName)));
+            } else {
+                alert("Please enter user name!");
+            }
+        }
+
+        function createRequest(type, payload) {
+            var clientRequest = {};
+            clientRequest.type = type;
+            clientRequest.payload = payload;
+            return clientRequest;
+        }
+
+
+        window.addEventListener("load", connect, false);
+    </script>
+</head>
+<body>
+<table>
+    <tr>
+        <td> <label id="rateLbl">Last response:</label></td>
+        <td> <label id="rate"></label></td>
+    </tr>
+</table>
+<table id="usersOnline">
+
+</table>
+</body>
+</html>
