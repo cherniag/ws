@@ -63,8 +63,8 @@ public class ConnectionManager {
             @Override
             public void onEvent(AfterSessionCreatedEvent event) {
                 System.out.println(event);
-                send(event.getHolder().getSessionId(), new ServerResponse(ResponseType.SESSION_CREATED, event.getGuest()));
-                send(event.getGuest().getSessionId(), new ServerResponse(ResponseType.SESSION_CREATED, event.getHolder()));
+                send(event.getGameSession().getHolder().getSessionId(), new ServerResponse(ResponseType.SESSION_CREATED, event.getGameSession()));
+                send(event.getGameSession().getGuest().getSessionId(), new ServerResponse(ResponseType.SESSION_CREATED, event.getGameSession()));
             }
         });
 
@@ -72,7 +72,7 @@ public class ConnectionManager {
             @Override
             public void onEvent(GameSessionClosedEvent event) {
                 System.out.println(event);
-                send(event.sessionId, new ServerResponse(ResponseType.SESSION_CLOSED, event.getClosedUser()));
+                send(event.sessionId, new ServerResponse(ResponseType.SESSION_CLOSED, event.getGameSession()));
             }
         });
 
@@ -91,6 +91,10 @@ public class ConnectionManager {
 
         clientRequestTypeMessageHandlerMap.put(ClientRequestType.SESSION_REQUEST_REJECT, (from, clientRequest) -> {
             send((String) clientRequest.payload, new ServerResponse(ResponseType.SESSION_REJECT, from));
+        });
+
+        clientRequestTypeMessageHandlerMap.put(ClientRequestType.SESSION_CLOSE_REQUEST, (from, clientRequest) -> {
+            eventPublisher.publish(new GameSessionCloseRequestEvent(from, (String) clientRequest.payload));
         });
     }
 

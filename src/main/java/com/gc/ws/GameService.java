@@ -5,9 +5,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -21,7 +19,7 @@ public class GameService {
     @Resource
     private EventPublisher eventPublisher;
 
-    private List<GameSession> gameSessions = new ArrayList<>();
+    private Map<String, GameSession> gameSessions = new HashMap<>();
 
     @PostConstruct
     public void init() {
@@ -32,26 +30,29 @@ public class GameService {
                 User removed = logout(event.sessionId);
                 eventPublisher.publish(new UserLogoutCompleteEvent(event.sessionId, removed));
 
-                List<GameSession> found = gameSessions.stream().filter(session -> {
-                    String guest = session.getGuest().getSessionId();
-                    String holder = session.getHolder().getSessionId();
-
-                    return guest.equals(event.sessionId) || holder.equals(event.sessionId);
-                }).collect(Collectors.toList());
+                List<GameSession> found = gameSessions.values().stream().filter(session -> session.getId().contains(event.sessionId)).collect(Collectors.toList());
 
                 if (!found.isEmpty()) {
                     found.stream().forEach(session -> {
-                        User holder = session.getHolder();
-                        User guest = session.getGuest();
-                        eventPublisher.publish(new GameSessionClosedEvent(
-                                holder.getSessionId().equals(event.sessionId) ? guest.getSessionId() : holder.getSessionId(),
-                                holder.getSessionId().equals(event.sessionId) ? holder : guest
-                        ));
+                        eventPublisher.publish(new GameSessionClosedEvent(session.getOppositeId(event.sessionId),session));
+                        gameSessions.remove(session.getId());
                     });
+
                 }
 
-                gameSessions.removeAll(found);
+            }
+        });
 
+        eventPublisher.addListener(GameSessionCloseRequestEvent.class, new EventListener<GameSessionCloseRequestEvent>() {
+            @Override
+            public void onEvent(GameSessionCloseRequestEvent event) {
+                System.out.println(event);
+                GameSession gameSession = gameSessions.get(event.getGameSessionId());
+                if (gameSession != null) {
+                    eventPublisher.publish(new GameSessionClosedEvent(gameSession.getOppositeId(event.sessionId), gameSession));
+                    eventPublisher.publish(new GameSessionClosedEvent(event.sessionId, gameSession));
+                    gameSessions.remove(event.getGameSessionId());
+                }
             }
         });
 
@@ -74,23 +75,17 @@ public class GameService {
             @Override
             public void onEvent(BeforeSessionCreatedEvent event) {
                 System.out.println(event);
-                boolean alreadyExist = gameSessions.stream().anyMatch(session -> {
-                    String guest = session.getGuest().getSessionId();
-                    String holder = session.getHolder().getSessionId();
-
-                    return guest.equals(event.sessionId) && holder.equals(event.getGuestSessionId()) ||
-                            holder.equals(event.sessionId) && guest.equals(event.getGuestSessionId());
-                });
+                boolean alreadyExist = gameSessions.values().stream().anyMatch(session -> session.getId().contains(event.getGuestSessionId()) && session.getId().contains(event.sessionId));
                 if (alreadyExist) {
-                    eventPublisher.publish(new UserErrorEvent(event.sessionId, "Session with " + onlineUsersStorage.get(event.getGuestSessionId()).getUserName() + " exists!"));
+                    eventPublisher.publish(new UserErrorEvent(event.sessionId, "Session with " + onlineUsersStorage.get(event.getGuestSessionId()).getUserName() + " already exists!"));
                     return;
                 }
 
                 User initiator = onlineUsersStorage.get(event.sessionId);
                 User guest = onlineUsersStorage.get(event.getGuestSessionId());
                 GameSession gameSession = new GameSession(initiator, guest);
-                gameSessions.add(gameSession);
-                eventPublisher.publish(new AfterSessionCreatedEvent(event.sessionId, initiator, guest));
+                gameSessions.put(gameSession.getId(), gameSession);
+                eventPublisher.publish(new AfterSessionCreatedEvent(event.sessionId, gameSession));
             }
         });
     }

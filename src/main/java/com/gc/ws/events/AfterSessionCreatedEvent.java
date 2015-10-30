@@ -1,35 +1,28 @@
 package com.gc.ws.events;
 
-import com.gc.ws.User;
+import com.gc.ws.GameSession;
 
 /**
  * Author: Gennadii Cherniaiev
  * Date: 10/30/2015
  */
 public class AfterSessionCreatedEvent extends Event {
-    private User holder;
-    private User guest;
+    private GameSession gameSession;
 
-    public AfterSessionCreatedEvent(String sessionId, User holder, User guest) {
+    public AfterSessionCreatedEvent(String sessionId, GameSession gameSession) {
         super(sessionId);
-        this.holder = holder;
-        this.guest = guest;
+
+        this.gameSession = gameSession;
     }
 
-    public User getGuest() {
-        return guest;
+    public GameSession getGameSession() {
+        return gameSession;
     }
-
-    public User getHolder() {
-        return holder;
-    }
-
 
     @Override
     public String toString() {
         return "AfterSessionCreatedEvent{" +
-                "holder=" + holder +
-                ", guest=" + guest +
+                "gameSession=" + gameSession +
                 "} " + super.toString();
     }
 }

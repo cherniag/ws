@@ -62,6 +62,11 @@
             wsocket.send(JSON.stringify(createRequest("SESSION_REQUEST", sessionId)));
         }
 
+        function closeSession(sessionId){
+            wsocket.send(JSON.stringify(createRequest("SESSION_CLOSE_REQUEST", sessionId)));
+        }
+
+
 
         function onMessage(evt) {
             var response = JSON.parse(evt.data);
@@ -83,10 +88,10 @@
                     wsocket.send(JSON.stringify(createRequest("SESSION_REQUEST_REJECT", response.payload)));
                 }
             } else if(response.responseType == "SESSION_CREATED"){
-                var row = '<tr id="' + response.payload.sessionId + '"><td>' + response.payload.userName + '</td></tr>';
+                var row = '<tr id="' + response.payload.id + '" onclick="closeSession(\'' + response.payload.id + '\')"><td>Owner[' + response.payload.holder.userName + '], Guest[' + response.payload.guest.userName + ']</td></tr>';
                 $('#sessions').append($(row));
             } else if(response.responseType == "SESSION_CLOSED"){
-                $('table#sessions tr#' + response.payload.sessionId).remove();
+                $('table#sessions tr#' + response.payload.id).remove();
             }
 
         }

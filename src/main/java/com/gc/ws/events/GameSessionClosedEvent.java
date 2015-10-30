@@ -1,6 +1,6 @@
 package com.gc.ws.events;
 
-import com.gc.ws.User;
+import com.gc.ws.GameSession;
 
 /**
  * Author: Gennadii Cherniaiev
@@ -8,21 +8,21 @@ import com.gc.ws.User;
  */
 public class GameSessionClosedEvent extends Event {
 
-    private User closedUser;
+    private GameSession gameSession;
 
-    public GameSessionClosedEvent(String sessionId, User closedUser) {
+    public GameSessionClosedEvent(String sessionId, GameSession gameSession) {
         super(sessionId);
-        this.closedUser = closedUser;
+        this.gameSession = gameSession;
     }
 
-    public User getClosedUser() {
-        return closedUser;
+    public GameSession getGameSession() {
+        return gameSession;
     }
 
     @Override
     public String toString() {
         return "GameSessionClosedEvent{" +
-                "closedUser=" + closedUser +
+                "gameSession=" + gameSession +
                 "} " + super.toString();
     }
 }
