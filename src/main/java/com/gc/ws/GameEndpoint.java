@@ -13,9 +13,13 @@ import java.util.Set;
  */
 @ServerEndpoint("/lobby")
 public class GameEndpoint {
-    private GameService gameService = new GameService();
+    private GameService gameService;// = SpringContextHolder.getApplicationContext().getBean("gameService", GameService.class);
     private MessageConverter messageConverter = new MessageConverter();
     private Set<Session> connected = new HashSet<>();
+
+    public GameEndpoint() {
+        gameService = SpringContextHolder.getApplicationContext().getBean("gameService", GameService.class);
+    }
 
     @OnOpen
     public void open(Session session) {
