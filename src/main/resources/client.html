@@ -3,12 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <title>WebSocket Client</title>
+    <style type="text/css">
+        #usersOnline tr td{
+            width: 50px;
+            background-color: azure;
+            border: 1px solid grey;
+            padding: 20px;
+        }
+
+        #sessions tr td{
+            width: 50px;
+            background-color: green;
+            border: 1px solid grey;
+            padding: 20px;
+        }
+    </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script type="text/javascript">
         var wsocket;
+        var userName;
         function connect() {
             wsocket = new WebSocket("ws://localhost:8026/websockets/lobby");
             wsocket.onmessage = onMessage;
+            login();
         }
 
         function send(){
@@ -19,16 +36,14 @@
             $('#usersOnline').html('');
              for(var i in response.payload) {
                  var user = response.payload[i];
-                 var row = '<tr id="' + user.sessionId + '"><td>' + user.userName + '</td></tr>';
-                 $('#usersOnline').append($(row));
+                 $('#usersOnline').append($(createRow(user)));
              }
         }
 
         function userLoggedIn(response) {
              for(var i in response.payload) {
                  var user = response.payload[i];
-                 var row = '<tr id="' + user.sessionId + '"><td>' + user.userName + '</td></tr>';
-                 $('#usersOnline').append($(row));
+                 $('#usersOnline').append($(createRow(user)));
              }
         }
 
@@ -39,22 +54,41 @@
             }
         }
 
+        function createRow(user) {
+            return '<tr id="' + user.sessionId + '"><td onclick="createSession(\''+ user.sessionId + '\')">' + user.userName + '</td></tr>';
+        }
+
+        function createSession(sessionId){
+            wsocket.send(JSON.stringify(createRequest("SESSION_REQUEST", sessionId)));
+        }
+
 
         function onMessage(evt) {
             var response = JSON.parse(evt.data);
+            $("#log").append($('<div>' + new Date() + ': ' + evt.data + '</div>'));
            // alert(evt.data);
-            if(response.responseType == "LOGIN_REQUEST"){
-                login();
-            } else if(response.responseType == "USER_LIST"){
+            if(response.responseType == "USER_LIST"){
                 initUsers(response);
             } else if(response.responseType == "USER_LOGGED_IN"){
                 userLoggedIn(response);
             } else if(response.responseType == "USER_LOGGED_OUT"){
                 userLoggedOut(response);
+            } else if(response.responseType == "ERROR"){
+                alert(response.payload);
+            } else if(response.responseType == "SESSION_REQUEST"){
+                var result = confirm("User " + response.payload + " invites you to private session. Confirm?");
+                if(result) {
+                    wsocket.send(JSON.stringify(createRequest("SESSION_REQUEST_CONFIRM", response.payload)));
+                } else {
+                    wsocket.send(JSON.stringify(createRequest("SESSION_REQUEST_REJECT", response.payload)));
+                }
+            } else if(response.responseType == "SESSION_CREATED"){
+                var row = '<tr id="' + response.payload.sessionId + '"><td>' + response.payload.userName + '</td></tr>';
+                $('#sessions').append($(row));
+            } else if(response.responseType == "SESSION_CLOSED"){
+                $('table#sessions tr#' + response.payload.sessionId).remove();
             }
 
-
-            document.getElementById("rate").innerHTML=evt.data;
         }
 
         function login() {
@@ -78,14 +112,23 @@
     </script>
 </head>
 <body>
-<table>
-    <tr>
-        <td> <label id="rateLbl">Last response:</label></td>
-        <td> <label id="rate"></label></td>
-    </tr>
-</table>
-<table id="usersOnline">
+<div style="width: 50%; float: left;">
+    Users online:
+    <table id="usersOnline">
 
-</table>
+    </table>
+</div>
+
+<div style="width: 50%; float: left;">
+    Sessions:
+    <table id="sessions">
+
+    </table>
+</div>
+<div style="float: none; clear: both;"></div>
+<br>
+<br>
+LOG:
+<div id = "log"></div>
 </body>
 </html>

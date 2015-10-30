@@ -5,4 +5,7 @@ package com.gc.ws;
  * Date: 10/29/2015
  */
 public class GameSessionStorage {
+
+
+
 }

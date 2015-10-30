@@ -5,5 +5,5 @@ package com.gc.ws;
  * Date: 10/29/2015
  */
 public enum ClientRequestType {
-    LOGIN, INVITE
+    LOGIN, SESSION_REQUEST, SESSION_REQUEST_CONFIRM, SESSION_REQUEST_REJECT
 }

@@ -14,4 +14,11 @@ public class GameSession {
     }
 
 
+    public User getHolder() {
+        return holder;
+    }
+
+    public User getGuest() {
+        return guest;
+    }
 }
