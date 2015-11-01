@@ -25,11 +25,9 @@
         function connect() {
             wsocket = new WebSocket("ws://localhost:8026/websockets/lobby");
             wsocket.onmessage = onMessage;
-            login();
-        }
+            wsocket.onclose = function(){ alert('Connection closed!');};
+            wsocket.onopen = function() { login(); };
 
-        function send(){
-            wsocket.send(document.getElementById("message").value);
         }
 
         function initUsers(response) {
@@ -40,14 +38,14 @@
              }
         }
 
-        function userLoggedIn(response) {
+        function onUserLoggedId(response) {
              for(var i in response.payload) {
                  var user = response.payload[i];
                  $('#usersOnline').append($(createRow(user)));
              }
         }
 
-        function userLoggedOut(response) {
+        function onUserLoggedOut(response) {
             for(var i in response.payload) {
                 var user = response.payload[i];
                 $('table#usersOnline tr#' + user.sessionId).remove();
@@ -59,11 +57,11 @@
         }
 
         function createSession(sessionId){
-            wsocket.send(JSON.stringify(createRequest("SESSION_REQUEST", sessionId)));
+            wsocket.send(JSON.stringify(createRequest("GAME_SESSION_INIT", sessionId)));
         }
 
         function closeSession(sessionId){
-            wsocket.send(JSON.stringify(createRequest("SESSION_CLOSE_REQUEST", sessionId)));
+            wsocket.send(JSON.stringify(createRequest("GAME_SESSION_CLOSE", sessionId)));
         }
 
 
@@ -72,25 +70,25 @@
             var response = JSON.parse(evt.data);
             $("#log").append($('<div>' + new Date() + ': ' + evt.data + '</div>'));
            // alert(evt.data);
-            if(response.responseType == "USER_LIST"){
+            if(response.messageType == "USER_LIST"){
                 initUsers(response);
-            } else if(response.responseType == "USER_LOGGED_IN"){
-                userLoggedIn(response);
-            } else if(response.responseType == "USER_LOGGED_OUT"){
-                userLoggedOut(response);
-            } else if(response.responseType == "ERROR"){
+            } else if(response.messageType == "USER_LOGGED_IN"){
+                onUserLoggedId(response);
+            } else if(response.messageType == "USER_LOGGED_OUT"){
+                onUserLoggedOut(response);
+            } else if(response.messageType == "USER_ERROR"){
                 alert(response.payload);
-            } else if(response.responseType == "SESSION_REQUEST"){
-                var result = confirm("User " + response.payload + " invites you to private session. Confirm?");
+            } else if(response.messageType == "GAME_SESSION_INIT"){
+                var result = confirm("User " + response.payload.owner.userName + " invites you to private session. Confirm?");
                 if(result) {
-                    wsocket.send(JSON.stringify(createRequest("SESSION_REQUEST_CONFIRM", response.payload)));
+                    wsocket.send(JSON.stringify(createRequest("GAME_SESSION_ACCEPTED", response.payload.id)));
                 } else {
-                    wsocket.send(JSON.stringify(createRequest("SESSION_REQUEST_REJECT", response.payload)));
+                    wsocket.send(JSON.stringify(createRequest("GAME_SESSION_REJECTED", response.payload.id)));
                 }
-            } else if(response.responseType == "SESSION_CREATED"){
-                var row = '<tr id="' + response.payload.id + '" onclick="closeSession(\'' + response.payload.id + '\')"><td>Owner[' + response.payload.holder.userName + '], Guest[' + response.payload.guest.userName + ']</td></tr>';
+            } else if(response.messageType == "GAME_SESSION_CREATED"){
+                var row = '<tr id="' + response.payload.id + '" onclick="closeSession(\'' + response.payload.id + '\')"><td>Owner[' + response.payload.owner.userName + '], Guest[' + response.payload.guest.userName + ']</td></tr>';
                 $('#sessions').append($(row));
-            } else if(response.responseType == "SESSION_CLOSED"){
+            } else if(response.messageType == "GAME_SESSION_REMOVED"){
                 $('table#sessions tr#' + response.payload.id).remove();
             }
 
@@ -99,18 +97,39 @@
         function login() {
             var userName = prompt("Please enter user name");
             if(userName != null) {
-                wsocket.send(JSON.stringify(createRequest("LOGIN", userName)));
+                 wsocket.send(JSON.stringify(createRequest("USER_TRY_LOGIN", userName)));
             } else {
-                alert("Please enter user name!");
+                alert("User name is required! Refresh page and try again");
             }
         }
 
         function createRequest(type, payload) {
             var clientRequest = {};
-            clientRequest.type = type;
+            clientRequest.messageType = type;
             clientRequest.payload = payload;
             return clientRequest;
         }
+
+/*        function sendMessage(msg) {
+            waitForSocketConnection(wsocket, function() {
+                wsocket.send(msg);
+            });
+        };
+
+
+        function waitForSocketConnection(socket, callback){
+                setTimeout(
+                    function(){
+                        if (socket.readyState === 1) {
+                            if(callback !== undefined){
+                                callback();
+                            }
+                            return;
+                        } else {
+                            waitForSocketConnection(socket,callback);
+                        }
+                    }, 100);
+            };*/
 
 
         window.addEventListener("load", connect, false);

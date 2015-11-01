@@ -4,7 +4,7 @@ package com.gc.ws.events;
  * Author: Gennadii Cherniaiev
  * Date: 10/30/2015
  */
-public class Event {
+public abstract class Event {
 
     public String sessionId;
 

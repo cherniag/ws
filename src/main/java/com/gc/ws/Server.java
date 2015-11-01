@@ -1,5 +1,6 @@
 package com.gc.ws;
 
+import com.gc.ws.transport.GameEndpoint;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
