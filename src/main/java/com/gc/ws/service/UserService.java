@@ -38,6 +38,10 @@ public class UserService {
             eventPublisher.publish(new UserErrorEvent(sessionId, "Duplicate user name"));
             return;
         }
+        if (userName.trim().isEmpty()) {
+            eventPublisher.publish(new UserErrorEvent(sessionId, "Wrong user name"));
+            return;
+        }
         User user = new User(userName, sessionId);
         userStorage.add(sessionId, user);
         eventPublisher.publish(new AfterUserLoginEvent(sessionId, user));

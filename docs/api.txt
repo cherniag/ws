@@ -6,15 +6,13 @@ Conversation uses messages in JSON format in custom protocol. There are 2 main a
  - messageType - type of message, it's like URL path in HTTP approach
  - payload - content of message, can be differ depending on message type.
 
-1. User login - is used to remember user and check his user name for uniqueness.
-    Request:
+1. User login - is used to remember user and check his user name for uniqueness, done by sending try user login message:
     {
         "messageType":"USER_TRY_LOGIN",
         "payload":"<userName>"
     }
 
-    Response:
-    Success scenario: user gets other users online and subscribes on notifications (see #2)
+    Success scenario: login is ok, user gets other users online and subscribes on notifications (see #2)
 	 users online message:
 	 {
 		"messageType":"USER_LIST",
@@ -25,10 +23,9 @@ Conversation uses messages in JSON format in custom protocol. There are 2 main a
 			}
 		]
 	 }
-	 where payload is list of all online users
+	 where payload is a list of all online users
 	 
-    Error scenario:
-    user gets error response:
+    Error scenario: user gets error message:
     {
         "messageType":"USER_ERROR",
         "payload":"<error message>"
@@ -80,6 +77,7 @@ Conversation uses messages in JSON format in custom protocol. There are 2 main a
         "messageType":"GAME_SESSION_INIT",
         "payload":{
             "id":"game session id",
+            "status":"INITIATED",
             "owner":{
                 "userName":"<owner user name>",
                 "sessionId":"<owner user session id>"
@@ -91,13 +89,13 @@ Conversation uses messages in JSON format in custom protocol. There are 2 main a
         }
     }
 
-	 and invited user can either accept invitation by sending this message:
+	and invited user can either accept invitation by sending this message:
     {
         "messageType":"GAME_SESSION_ACCEPTED",
         "payload":"<game session id>"
     }
 	 
-	 or reject invitation by sending this message:
+	or reject invitation by sending this message:
     {
         "messageType":"GAME_SESSION_REJECTED",
         "payload":"<game session id>"
@@ -109,6 +107,7 @@ Conversation uses messages in JSON format in custom protocol. There are 2 main a
         "messageType":"GAME_SESSION_CREATED",
         "payload":{
             "id":"game session id",
+            "status":"ACCEPTED",
             "owner":{
                 "userName":"<owner user name>",
                 "sessionId":"<owner user session id>"
@@ -125,6 +124,7 @@ Conversation uses messages in JSON format in custom protocol. There are 2 main a
 		"messageType":"GAME_SESSION_REJECTED",
 		"payload":{
 			"id":"game session id",
+			"status":"INITIATED",
 			"owner":{
 				"userName":"<owner user name>",
 				"sessionId":"<owner user session id>"
@@ -147,6 +147,7 @@ Conversation uses messages in JSON format in custom protocol. There are 2 main a
 		"messageType":"GAME_SESSION_REMOVED",
 		"payload":{
 			"id":"game session id",
+			"status":"ACCEPTED",
 			"owner":{
 				"userName":"<owner user name>",
 				"sessionId":"<owner user session id>"
@@ -163,6 +164,7 @@ Conversation uses messages in JSON format in custom protocol. There are 2 main a
 		"messageType":"GAME_SESSION_REMOVED",
 		"payload":{
 			"id":"game session id",
+			"status":"ACCEPTED",
 			"owner":{
 				"userName":"<owner user name>",
 				"sessionId":"<owner user session id>"

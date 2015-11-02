@@ -1,0 +1,17 @@
+Requirements:
+- JDK8
+- Maven 3
+- Browser: IE 10+, FF 38+, Chrome 43+, Safari 8+, Opera 32+
+
+in project folder run command:
+mvn package
+ 
+then change folder
+cd target
+
+and run command to start server
+java -jar ws-1.0-SNAPSHOT.jar 
+
+html page should be opened in browser:
+<project folder>/src/main/resources/client.html
+ 

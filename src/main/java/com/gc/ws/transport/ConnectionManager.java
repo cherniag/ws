@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.gc.ws.transport.MessageType.*;
 
@@ -29,7 +30,7 @@ import static com.gc.ws.transport.MessageType.*;
 @Component
 class ConnectionManager {
     private static final Logger logger = LogManager.getLogger(ConnectionManager.class);
-    private Map<String, Session> connections = new HashMap<>();
+    private Map<String, Session> connections = new ConcurrentHashMap<>();
     private Map<MessageType, ClientMessageHandler> clientMessageHandlerMap = new HashMap<>();
     @Resource
     private SubscriptionManager subscriptionManager;
@@ -46,18 +47,18 @@ class ConnectionManager {
     }
 
     void open(Session session) {
-        logger.debug("Open session {}", session);
+        logger.debug("Open session {}", session.getId());
         connections.put(session.getId(), session);
     }
 
     void error(Session session, Throwable t) {
-        logger.warn("Error on session {}", session, t);
+        logger.warn("Error on session {}", session.getId(), t);
         connections.remove(session.getId());
         eventPublisher.publish(new ConnectionClosedEvent(session.getId()));
     }
 
     void closedConnection(Session session, CloseReason closeReason) {
-        logger.debug("Close session {} reason {}", session, closeReason);
+        logger.debug("Close session {} reason {}", session.getId(), closeReason);
         connections.remove(session.getId());
         eventPublisher.publish(new ConnectionClosedEvent(session.getId()));
     }
@@ -68,29 +69,32 @@ class ConnectionManager {
         ClientMessageHandler clientMessageHandler = clientMessageHandlerMap.get(clientMessage.messageType);
         if (clientMessageHandler != null) {
             clientMessageHandler.handle(from, clientMessage);
+        } else {
+            logger.warn("Message handler for {} is absent", clientMessage.messageType);
         }
     }
 
     private void send(String to, Message message) {
         Session recipient = connections.get(to);
         if (recipient != null) {
-            try {
-                recipient.getBasicRemote().sendText(messageConverter.convert(message));
-            } catch (IOException e) {
-                logger.error("Could not send message {} to session {}", message, to, e);
+            if (recipient.isOpen()) {
+                try {
+                    recipient.getBasicRemote().sendText(messageConverter.convert(message));
+                } catch (IOException e) {
+                    logger.error("Could not send message {} to session {}", message, recipient.getId(), e);
+                }
+            } else {
+                logger.warn("Can not send message {} to {} : connection is already closed", message, to);
+                connections.remove(to);
             }
+        } else {
+            logger.warn("Can not send message {} to {} : connection doesn't exist", message, to);
         }
     }
 
     private void broadcast(Message message) {
         Set<String> recipients = subscriptionManager.getSubscribers(message.messageType);
-        recipients.stream().forEach(s -> {
-            try {
-                connections.get(s).getBasicRemote().sendText(messageConverter.convert(message));
-            } catch (IOException e) {
-                logger.error("Could not send message {} to session {}", message, s, e);
-            }
-        });
+        recipients.stream().forEach(s -> send(s, message));
     }
 
     private void registerInterestedEventListeners() {

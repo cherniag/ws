@@ -2,11 +2,10 @@ package com.gc.ws.persistence;
 
 import com.gc.ws.domain.GameSession;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -16,7 +15,7 @@ import java.util.stream.Collectors;
 @Component
 public class GameSessionStorage {
 
-    private Map<String, GameSession> gameSessions = new HashMap<>();
+    private Map<String, GameSession> gameSessions = new ConcurrentHashMap<>();
 
     public GameSession save(GameSession gameSession) {
         return gameSessions.put(gameSession.getId(), gameSession);
