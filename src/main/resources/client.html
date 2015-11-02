@@ -5,14 +5,14 @@
     <title>WebSocket Client</title>
     <style type="text/css">
         #usersOnline tr td{
-            width: 50px;
+            width: 100px;
             background-color: azure;
             border: 1px solid grey;
             padding: 20px;
         }
 
         #sessions tr td{
-            width: 50px;
+            width: 100px;
             background-color: green;
             border: 1px solid grey;
             padding: 20px;
@@ -25,9 +25,8 @@
         function connect() {
             wsocket = new WebSocket("ws://localhost:8026/websockets/lobby");
             wsocket.onmessage = onMessage;
-            wsocket.onclose = function(){ alert('Connection closed!');};
+            wsocket.onclose = function(){ alert('Connection closed, please refresh the page');};
             wsocket.onopen = function() { login(); };
-
         }
 
         function initUsers(response) {
@@ -57,19 +56,35 @@
         }
 
         function createSession(sessionId){
-            wsocket.send(JSON.stringify(createRequest("GAME_SESSION_INIT", sessionId)));
+            send(createRequest("GAME_SESSION_INIT", sessionId));
         }
 
         function closeSession(sessionId){
-            wsocket.send(JSON.stringify(createRequest("GAME_SESSION_CLOSE", sessionId)));
+            send(createRequest("GAME_SESSION_CLOSE", sessionId));
         }
 
 
+        function onInitGameSession(response) {
+            var result = confirm("User " + response.payload.owner.userName + " invites you to private session. Confirm?");
+            if (result) {
+                send(createRequest("GAME_SESSION_ACCEPTED", response.payload.id));
+            } else {
+                send(createRequest("GAME_SESSION_REJECTED", response.payload.id));
+            }
+        }
+
+        function onGameSessionCreated(response) {
+            var row = '<tr id="' + response.payload.id + '" onclick="closeSession(\'' + response.payload.id + '\')"><td>Owner[' + response.payload.owner.userName + '], Guest[' + response.payload.guest.userName + ']</td></tr>';
+            $('#sessions').append($(row));
+        }
+
+        function onGameSessionRemoved(response) {
+            $('table#sessions tr#' + response.payload.id).remove();
+        }
 
         function onMessage(evt) {
+            console.log(evt.data);
             var response = JSON.parse(evt.data);
-            $("#log").append($('<div>' + new Date() + ': ' + evt.data + '</div>'));
-           // alert(evt.data);
             if(response.messageType == "USER_LIST"){
                 initUsers(response);
             } else if(response.messageType == "USER_LOGGED_IN"){
@@ -79,25 +94,23 @@
             } else if(response.messageType == "USER_ERROR"){
                 alert(response.payload);
             } else if(response.messageType == "GAME_SESSION_INIT"){
-                var result = confirm("User " + response.payload.owner.userName + " invites you to private session. Confirm?");
-                if(result) {
-                    wsocket.send(JSON.stringify(createRequest("GAME_SESSION_ACCEPTED", response.payload.id)));
-                } else {
-                    wsocket.send(JSON.stringify(createRequest("GAME_SESSION_REJECTED", response.payload.id)));
-                }
+                onInitGameSession(response);
             } else if(response.messageType == "GAME_SESSION_CREATED"){
-                var row = '<tr id="' + response.payload.id + '" onclick="closeSession(\'' + response.payload.id + '\')"><td>Owner[' + response.payload.owner.userName + '], Guest[' + response.payload.guest.userName + ']</td></tr>';
-                $('#sessions').append($(row));
+                onGameSessionCreated(response);
             } else if(response.messageType == "GAME_SESSION_REMOVED"){
-                $('table#sessions tr#' + response.payload.id).remove();
+                onGameSessionRemoved(response);
             }
 
+        }
+
+        function send(message) {
+            wsocket.send(JSON.stringify(message));
         }
 
         function login() {
             var userName = prompt("Please enter user name");
             if(userName != null) {
-                 wsocket.send(JSON.stringify(createRequest("USER_TRY_LOGIN", userName)));
+                send(createRequest("USER_TRY_LOGIN", userName));
             } else {
                 alert("User name is required! Refresh page and try again");
             }
@@ -109,28 +122,6 @@
             clientRequest.payload = payload;
             return clientRequest;
         }
-
-/*        function sendMessage(msg) {
-            waitForSocketConnection(wsocket, function() {
-                wsocket.send(msg);
-            });
-        };
-
-
-        function waitForSocketConnection(socket, callback){
-                setTimeout(
-                    function(){
-                        if (socket.readyState === 1) {
-                            if(callback !== undefined){
-                                callback();
-                            }
-                            return;
-                        } else {
-                            waitForSocketConnection(socket,callback);
-                        }
-                    }, 100);
-            };*/
-
 
         window.addEventListener("load", connect, false);
     </script>
@@ -150,9 +141,5 @@
     </table>
 </div>
 <div style="float: none; clear: both;"></div>
-<br>
-<br>
-LOG:
-<div id = "log"></div>
 </body>
 </html>

@@ -7,6 +7,8 @@ import com.gc.ws.events.gamesession.*;
 import com.gc.ws.events.user.UserErrorEvent;
 import com.gc.ws.persistence.GameSessionStorage;
 import com.gc.ws.persistence.UserStorage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -18,6 +20,7 @@ import java.util.List;
  */
 @Service
 public class GameSessionService {
+    private static final Logger logger = LogManager.getLogger(GameSessionService.class);
     @Resource
     private EventPublisher eventPublisher;
     @Resource
@@ -31,6 +34,7 @@ public class GameSessionService {
     }
 
     void initGameSession(String ownerSessionId, String guestSessionId) {
+        logger.debug("Init game session owner {} guest {}", ownerSessionId, guestSessionId);
         if (gameSessionStorage.existsForUsers(ownerSessionId, guestSessionId)) {
             eventPublisher.publish(new UserErrorEvent(ownerSessionId, "Session with " + userStorage.get(guestSessionId).getUserName() + " already exists!"));
             return;
@@ -44,6 +48,7 @@ public class GameSessionService {
     }
 
     void acceptGameSession(String userSessionId, String gameSessionId) {
+        logger.debug("Accept game session user {} game session id {}", userSessionId, gameSessionId);
         GameSession gameSession = gameSessionStorage.get(gameSessionId);
         if (gameSession == null) {
             eventPublisher.publish(new UserErrorEvent(userSessionId, "Session with " + gameSessionId + " doesn't exist!"));
@@ -55,6 +60,7 @@ public class GameSessionService {
     }
 
     void rejectGameSession(String userSessionId, String gameSessionId) {
+        logger.debug("Reject game session user {} game session id {}", userSessionId, gameSessionId);
         GameSession gameSession = gameSessionStorage.get(gameSessionId);
         if (gameSession == null) {
             eventPublisher.publish(new UserErrorEvent(userSessionId, "Session with " + gameSessionId + " doesn't exist!"));
@@ -65,6 +71,7 @@ public class GameSessionService {
     }
 
     void closeGameSession(String userSessionId, String gameSessionId) {
+        logger.debug("Close game session user {} game session id {}", userSessionId, gameSessionId);
         GameSession found = gameSessionStorage.get(gameSessionId);
 
         if (found==null) {
@@ -76,6 +83,7 @@ public class GameSessionService {
     }
 
     void closeUserGameSessions(String userSessionId) {
+        logger.debug("Close all game sessions  for user {}", userSessionId);
         List<GameSession> found = gameSessionStorage.findByUserSessionId(userSessionId);
 
         if (!found.isEmpty()) {

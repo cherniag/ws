@@ -2,17 +2,22 @@ package com.gc.ws.transport;
 
 import com.gc.ws.domain.GameSession;
 import com.gc.ws.domain.User;
-import com.gc.ws.events.*;
+import com.gc.ws.events.ConnectionClosedEvent;
 import com.gc.ws.events.EventListener;
+import com.gc.ws.events.EventPublisher;
 import com.gc.ws.events.gamesession.*;
 import com.gc.ws.events.user.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.websocket.Session;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static com.gc.ws.transport.MessageType.*;
 
@@ -22,6 +27,7 @@ import static com.gc.ws.transport.MessageType.*;
  */
 @Component
 class ConnectionManager {
+    private static final Logger logger = LogManager.getLogger(ConnectionManager.class);
     private Map<String, Session> connections = new HashMap<>();
     private Map<MessageType, ClientMessageHandler> clientMessageHandlerMap = new HashMap<>();
     @Resource
@@ -39,20 +45,24 @@ class ConnectionManager {
     }
 
     void open(Session session) {
+        logger.debug("Open session {}", session);
         connections.put(session.getId(), session);
     }
 
     void error(Session session, Throwable t) {
+        logger.warn("Error on session {}", session, t);
         connections.remove(session.getId());
         eventPublisher.publish(new ConnectionClosedEvent(session.getId()));
     }
 
     void closedConnection(Session session) {
+        logger.debug("Close session {}", session);
         connections.remove(session.getId());
         eventPublisher.publish(new ConnectionClosedEvent(session.getId()));
     }
 
     void onMessage(String from, String msg) {
+        logger.debug("OnMessage session {}, message {}", from, msg);
         Message clientMessage = messageConverter.convert(msg);
         ClientMessageHandler clientMessageHandler = clientMessageHandlerMap.get(clientMessage.messageType);
         if (clientMessageHandler != null) {
@@ -66,7 +76,7 @@ class ConnectionManager {
             try {
                 recipient.getBasicRemote().sendText(messageConverter.convert(message));
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Could not send message {} to session {}", message, to, e);
             }
         }
     }
@@ -77,7 +87,7 @@ class ConnectionManager {
             try {
                 connections.get(s).getBasicRemote().sendText(messageConverter.convert(message));
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Could not send message {} to session {}", message, s, e);
             }
         });
     }

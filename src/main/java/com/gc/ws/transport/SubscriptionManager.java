@@ -1,5 +1,7 @@
 package com.gc.ws.transport;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -10,7 +12,7 @@ import java.util.*;
  */
 @Component
 class SubscriptionManager {
-
+    private static final Logger logger = LogManager.getLogger(SubscriptionManager.class);
     private Map<MessageType, Set<String>> subscribers = new HashMap<>();
 
     Set<String> getSubscribers(MessageType topic) {
@@ -19,6 +21,7 @@ class SubscriptionManager {
     }
 
     void subscribe(String sessionId, MessageType... topics) {
+        logger.debug("Subscribe {} to {}", sessionId, topics);
         for (MessageType topic : topics) {
             if(!subscribers.containsKey(topic)) {
                 subscribers.put(topic, new HashSet<>());
@@ -28,6 +31,7 @@ class SubscriptionManager {
     }
 
     void unsubscribe(String sessionId) {
+        logger.debug("Unsubscribe {}", sessionId);
         subscribers.entrySet().forEach(responseTypeSetEntry -> {
             responseTypeSetEntry.getValue().remove(sessionId);
         });
