@@ -1,0 +1,176 @@
+API documentation
+
+Server URL : ws://localhost:8026/websockets/lobby
+
+Conversation uses messages in JSON format in custom protocol. There are 2 main attributes in every message
+ - messageType - type of message, it's like URL path in HTTP approach
+ - payload - content of message, can be differ depending on message type.
+
+1. User login - is used to remember user and check his user name for uniqueness.
+    Request:
+    {
+        "messageType":"USER_TRY_LOGIN",
+        "payload":"<userName>"
+    }
+
+    Response:
+    Success scenario: user gets other users online and subscribes on notifications (see #2)
+	 users online message:
+	 {
+		"messageType":"USER_LIST",
+		"payload":[
+			{
+				"userName":"<user1>",
+				"sessionId":"<user session 1>"
+			}
+		]
+	 }
+	 where payload is list of all online users
+	 
+    Error scenario:
+    user gets error response:
+    {
+        "messageType":"USER_ERROR",
+        "payload":"<error message>"
+    }
+    for example if user name already exists
+
+2. Users notifications:
+    there are 2 types user related notifications:
+    USER_LOGGED_IN - if another user logged in
+
+    {
+		"messageType":"USER_LOGGED_IN",
+		"payload":[
+			{
+				"userName":"<user1>",
+				"sessionId":"<user session 1>"
+			}
+		]
+	}
+	where payload is list of new users
+	 
+    USER_LOGGED_OUT - if another user logged out
+
+    {
+		"messageType":"USER_LOGGED_OUT",
+		"payload":[
+			{
+				"userName":"<user1>",
+				"sessionId":"<user session 1>"
+			}
+		]
+	}
+	where payload is list of users who have leaved
+	 
+3. User can invite another online user to game session by sending invite message
+    {
+		"messageType":"GAME_SESSION_INIT",
+		"payload":"<invited user session id>"
+	}
+	 
+    if game session already exists then user gets error:
+    {
+        "messageType":"USER_ERROR",
+        "payload":"<error message>"
+    }
+
+    In success scenario invited user receives invitation which contains all required information:
+    {
+        "messageType":"GAME_SESSION_INIT",
+        "payload":{
+            "id":"game session id",
+            "owner":{
+                "userName":"<owner user name>",
+                "sessionId":"<owner user session id>"
+            },
+            "guest":{
+                "userName":"<invited user name>",
+                "sessionId":"<invited user session id>"
+            }
+        }
+    }
+
+	 and invited user can either accept invitation by sending this message:
+    {
+        "messageType":"GAME_SESSION_ACCEPTED",
+        "payload":"<game session id>"
+    }
+	 
+	 or reject invitation by sending this message:
+    {
+        "messageType":"GAME_SESSION_REJECTED",
+        "payload":"<game session id>"
+    }
+	 
+	 
+4. If invited user accepted invitation and game session has been created then both users get message about new game session
+    {
+        "messageType":"GAME_SESSION_CREATED",
+        "payload":{
+            "id":"game session id",
+            "owner":{
+                "userName":"<owner user name>",
+                "sessionId":"<owner user session id>"
+            },
+            "guest":{
+                "userName":"<invited user name>",
+                "sessionId":"<invited user session id>"
+            }
+        }
+    }
+
+    in case of reject initiator gets message:
+	{
+		"messageType":"GAME_SESSION_REJECTED",
+		"payload":{
+			"id":"game session id",
+			"owner":{
+				"userName":"<owner user name>",
+				"sessionId":"<owner user session id>"
+			},
+			"guest":{
+				"userName":"<invited user name>",
+				"sessionId":"<invited user session id>"
+			}
+		}
+	 }
+	 
+5.User can close game session by sending close request message:
+	 {
+		"messageType":"GAME_SESSION_CLOSE",
+		"payload":"<game session id>"
+	 }
+	 
+     in this case both users involved in game session get removed game session message:
+	 {
+		"messageType":"GAME_SESSION_REMOVED",
+		"payload":{
+			"id":"game session id",
+			"owner":{
+				"userName":"<owner user name>",
+				"sessionId":"<owner user session id>"
+			},
+			"guest":{
+				"userName":"<invited user name>",
+				"sessionId":"<invited user session id>"
+			}
+		}
+	 }
+
+6. If user who takes part in game session leaves or connection is broken another user will receive removed game session message:
+	{
+		"messageType":"GAME_SESSION_REMOVED",
+		"payload":{
+			"id":"game session id",
+			"owner":{
+				"userName":"<owner user name>",
+				"sessionId":"<owner user session id>"
+			},
+			"guest":{
+				"userName":"<invited user name>",
+				"sessionId":"<invited user session id>"
+			}
+		}
+	}
+ 	 

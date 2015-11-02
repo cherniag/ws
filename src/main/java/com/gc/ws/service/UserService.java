@@ -29,19 +29,7 @@ public class UserService {
 
     @PostConstruct
     public void init() {
-        eventPublisher.addListener(ConnectionClosedEvent.class, new EventListener<ConnectionClosedEvent>() {
-            @Override
-            public void onEvent(ConnectionClosedEvent event) {
-                logout(event.sessionId);
-            }
-        });
-
-        eventPublisher.addListener(UserLoginEvent.class, new EventListener<UserLoginEvent>() {
-            @Override
-            public void onEvent(UserLoginEvent event) {
-                login(event.userName, event.sessionId);
-            }
-        });
+        registerInterestedEventListeners();
     }
 
     private void login(String userName, String sessionId) {
@@ -56,15 +44,31 @@ public class UserService {
         eventPublisher.publish(new UserMessageEvent(sessionId, USER_LIST, getOtherUsersOnline(userName)));
     }
 
-
     private void logout(String sessionId) {
         logger.debug("Logout sessionId {}", sessionId);
         User removed = userStorage.remove(sessionId);
         eventPublisher.publish(new AfterUserLogoutEvent(sessionId, removed));
     }
 
+
     private Collection<User> getOtherUsersOnline(String userName) {
         Collection<User> users = userStorage.getAll();
         return users.stream().filter(user -> !user.getUserName().equals(userName)).collect(Collectors.toList());
+    }
+
+    private void registerInterestedEventListeners() {
+        eventPublisher.addListener(ConnectionClosedEvent.class, new EventListener<ConnectionClosedEvent>() {
+            @Override
+            public void onEvent(ConnectionClosedEvent event) {
+                logout(event.sessionId);
+            }
+        });
+
+        eventPublisher.addListener(UserLoginEvent.class, new EventListener<UserLoginEvent>() {
+            @Override
+            public void onEvent(UserLoginEvent event) {
+                login(event.userName, event.sessionId);
+            }
+        });
     }
 }

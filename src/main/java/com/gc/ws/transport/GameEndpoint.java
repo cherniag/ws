@@ -28,16 +28,13 @@ public class GameEndpoint {
     }
 
     @OnClose
-    public void closedConnection(Session session) {
-        connectionManager.closedConnection(session);
+    public void closedConnection(Session session, CloseReason reason) {
+        connectionManager.closedConnection(session, reason);
     }
 
     @OnMessage
     public void onMessage(Session session, String msg) {
         connectionManager.onMessage(session.getId(), msg);
     }
-
-
-
 
 }

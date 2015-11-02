@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import javax.websocket.CloseReason;
 import javax.websocket.Session;
 import java.io.IOException;
 import java.util.HashMap;
@@ -55,8 +56,8 @@ class ConnectionManager {
         eventPublisher.publish(new ConnectionClosedEvent(session.getId()));
     }
 
-    void closedConnection(Session session) {
-        logger.debug("Close session {}", session);
+    void closedConnection(Session session, CloseReason closeReason) {
+        logger.debug("Close session {} reason {}", session, closeReason);
         connections.remove(session.getId());
         eventPublisher.publish(new ConnectionClosedEvent(session.getId()));
     }
@@ -140,9 +141,9 @@ class ConnectionManager {
             }
         });
 
-        eventPublisher.addListener(AfterGameSessionRejectEvent.class, new EventListener<AfterGameSessionAcceptEvent>() {
+        eventPublisher.addListener(AfterGameSessionRejectEvent.class, new EventListener<AfterGameSessionRejectEvent>() {
             @Override
-            public void onEvent(AfterGameSessionAcceptEvent event) {
+            public void onEvent(AfterGameSessionRejectEvent event) {
                 GameSession gameSession = event.getGameSession();
                 send(gameSession.getOwner().getSessionId(), new Message(GAME_SESSION_REJECTED, gameSession));
             }

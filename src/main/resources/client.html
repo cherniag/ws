@@ -5,16 +5,16 @@
     <title>WebSocket Client</title>
     <style type="text/css">
         #usersOnline tr td{
-            width: 100px;
-            background-color: azure;
-            border: 1px solid grey;
+            width: 200px;
+            background-color: #E0FFFF;
+            border: 2px solid grey;
             padding: 20px;
         }
 
         #sessions tr td{
-            width: 100px;
-            background-color: green;
-            border: 1px solid grey;
+            width: 200px;
+            background-color: #8FBC8F;
+            border: 2px solid grey;
             padding: 20px;
         }
     </style>
@@ -22,19 +22,34 @@
     <script type="text/javascript">
         var wsocket;
         var userName;
+
         function connect() {
             wsocket = new WebSocket("ws://localhost:8026/websockets/lobby");
             wsocket.onmessage = onMessage;
-            wsocket.onclose = function(){ alert('Connection closed, please refresh the page');};
-            wsocket.onopen = function() { login(); };
+            wsocket.onclose = onConnectionClose;
+            wsocket.onopen = function() {
+                login();
+            };
+        }
+
+        function onConnectionClose(){
+            alert('Connection closed, please refresh the page');
+            clearData();
+            $('#status').html(userName + ': connection closed');
+        }
+
+        function clearData() {
+            $('#usersOnline').html('');
+            $('#sessions').html('');
         }
 
         function initUsers(response) {
-            $('#usersOnline').html('');
-             for(var i in response.payload) {
+            clearData();
+            for(var i in response.payload) {
                  var user = response.payload[i];
                  $('#usersOnline').append($(createRow(user)));
              }
+            $('#status').html(userName + ': connected');
         }
 
         function onUserLoggedId(response) {
@@ -63,7 +78,6 @@
             send(createRequest("GAME_SESSION_CLOSE", sessionId));
         }
 
-
         function onInitGameSession(response) {
             var result = confirm("User " + response.payload.owner.userName + " invites you to private session. Confirm?");
             if (result) {
@@ -80,6 +94,10 @@
 
         function onGameSessionRemoved(response) {
             $('table#sessions tr#' + response.payload.id).remove();
+        }
+
+        function onGameSessionRejected(response) {
+            alert('User ' + response.payload.guest.userName + ' rejected your invitation');
         }
 
         function onMessage(evt) {
@@ -99,8 +117,9 @@
                 onGameSessionCreated(response);
             } else if(response.messageType == "GAME_SESSION_REMOVED"){
                 onGameSessionRemoved(response);
+            } else if(response.messageType == "GAME_SESSION_REJECTED"){
+                onGameSessionRejected(response);
             }
-
         }
 
         function send(message) {
@@ -108,8 +127,8 @@
         }
 
         function login() {
-            var userName = prompt("Please enter user name");
-            if(userName != null) {
+            userName = prompt("Please enter user name");
+            if(userName != null && userName.trim().length > 0) {
                 send(createRequest("USER_TRY_LOGIN", userName));
             } else {
                 alert("User name is required! Refresh page and try again");
@@ -127,18 +146,21 @@
     </script>
 </head>
 <body>
+<div style="margin-bottom: 10px;" id="status"></div>
 <div style="width: 50%; float: left;">
     Users online:
-    <table id="usersOnline">
+    <table id="usersOnline" style="margin-top: 50px;margin-bottom: 15px;">
 
     </table>
+    * click on user to invite to game session
 </div>
 
 <div style="width: 50%; float: left;">
-    Sessions:
-    <table id="sessions">
+    Game sessions:
+    <table id="sessions" style="margin-top: 50px;margin-bottom: 15px;">
 
     </table>
+    * click on game session to close it
 </div>
 <div style="float: none; clear: both;"></div>
 </body>
