@@ -1,3 +1,4 @@
+/*
 package com.gc.ws;
 
 import com.gc.ws.transport.GameEndpoint;
@@ -9,10 +10,12 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 
+*/
 /**
  * Author: Gennadii Cherniaiev
  * Date: 10/29/2015
- */
+ *//*
+
 public class Boot {
     public static void main(String[] args) {
         runServer();
@@ -35,3 +38,4 @@ public class Boot {
         }
     }
 }
+*/

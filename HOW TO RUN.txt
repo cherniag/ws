@@ -1,0 +1,11 @@
+Requirements:
+- JDK8
+- Browser: IE 10+, FF 38+, Chrome 43+, Safari 8+, Opera 32+
+
+Run command to start server
+java -jar ws-1.0-SNAPSHOT.jar 
+
+html page should be opened in browser:
+client.html
+
+To stop server press enter
